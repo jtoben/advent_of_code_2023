@@ -4,11 +4,11 @@
     {
         static void Main()
         {
-            var input = File.ReadAllLines("input.txt");
+            var engineSchematic = File.ReadAllLines("input.txt");
 
             List<Number> numbers = [];
-            for (int y = 0; y < input.Length; y++) {
-                var line = input[y];
+            for (int y = 0; y < engineSchematic.Length; y++) {
+                var line = engineSchematic[y];
 
                 for (int x = 0; x < line.Length; x++) {
                     if (char.IsNumber(line[x])) {
@@ -27,8 +27,8 @@
                 }
             }
 
-            Console.WriteLine(PartOne(numbers, input));
-            Console.WriteLine(PartTwo());
+            Console.WriteLine(PartOne(numbers, engineSchematic));
+            Console.WriteLine(PartTwo(numbers, engineSchematic));
         }
 
         private static int PartOne(List<Number> numbers, string[] engineSchematic)
@@ -44,9 +44,44 @@
             return result;
         }
 
-        private static int PartTwo()
+        private static int PartTwo(List<Number> numbers, string[] engineSchematic)
         {
-            return -1;
+            List<Vector2> gearLocations = GetGearLocations(engineSchematic);
+
+            List<int> gearRatios = [];
+            foreach (var gearLocation in gearLocations) {
+                var neighbours = GetNeighbours(gearLocation, 0, engineSchematic.Length - 1, 0, engineSchematic[0].Length - 1);
+
+                HashSet<Number> numberNeighbours = [];
+                foreach (var neighbour in neighbours) {
+                    var result = numbers.FirstOrDefault(number => number.ContainsLocation(neighbour));
+                    if (result != null) {
+                        numberNeighbours.Add(result);
+                    }
+                }
+
+                if (numberNeighbours.Count == 2) {
+                    gearRatios.Add(numberNeighbours.First().Value * numberNeighbours.Last().Value);
+                }
+            }
+
+            return gearRatios.Sum();
+
+            static List<Vector2> GetGearLocations(string[] engineSchematic)
+            {
+                List<Vector2> gearLocations = [];
+                for (int y = 0; y < engineSchematic.Length; y++) {
+                    var line = engineSchematic[y];
+
+                    for (int x = 0; x < line.Length; x++) {
+                        if (line[x] == '*') {
+                            gearLocations.Add(new Vector2(x, y));
+                        }
+                    }
+                }
+
+                return gearLocations;
+            }
         }
 
         private static bool IsPart(Number number, string[] engineSchematic)
@@ -64,16 +99,34 @@
             return false;
         }
 
-        private static Location[] GetNeighbours(Number number, int minX, int maxX, int minY, int maxY)
+        private static Vector2[] GetNeighbours(Number number, int minX, int maxX, int minY, int maxY)
         {
-            List<Location> neighbours = [];
+            List<Vector2> neighbours = [];
 
             for (int i = number.StartX - 1; i <= number.EndX + 1; i++) {
-                neighbours.Add(new Location(i, number.Y - 1));
-                neighbours.Add(new Location(i, number.Y + 1));
+                neighbours.Add(new Vector2(i, number.Y - 1));
+                neighbours.Add(new Vector2(i, number.Y + 1));
             }
-            neighbours.Add(new Location(number.StartX - 1, number.Y));
-            neighbours.Add(new Location(number.EndX + 1, number.Y));
+            neighbours.Add(new Vector2(number.StartX - 1, number.Y));
+            neighbours.Add(new Vector2(number.EndX + 1, number.Y));
+
+            return neighbours.Where(
+                neighbour => neighbour.X >= minX && neighbour.X <= maxX && neighbour.Y >= minY && neighbour.Y <= maxY)
+                .ToArray();
+        }
+
+        private static Vector2[] GetNeighbours(Vector2 location, int minX, int maxX, int minY, int maxY)
+        {
+            List<Vector2> neighbours = [
+                new Vector2(location.X - 1, location.Y - 1),
+                new Vector2(location.X, location.Y - 1),
+                new Vector2(location.X + 1, location.Y - 1),
+                new Vector2(location.X + 1, location.Y),
+                new Vector2(location.X + 1, location.Y + 1),
+                new Vector2(location.X, location.Y + 1),
+                new Vector2(location.X - 1, location.Y + 1),
+                new Vector2(location.X - 1, location.Y),
+            ];
 
             return neighbours.Where(
                 neighbour => neighbour.X >= minX && neighbour.X <= maxX && neighbour.Y >= minY && neighbour.Y <= maxY)
@@ -82,10 +135,13 @@
 
         private record Number(int Value, int StartX, int EndX, int Y)
         {
-
+            public bool ContainsLocation(Vector2 location)
+            {
+                return location.Y == Y && location.X >= StartX && location.X <= EndX;
+            }
         }
 
-        private record Location(int X, int Y)
+        private record Vector2(int X, int Y)
         {
 
         }
