@@ -141,9 +141,6 @@
             }
         }
 
-        private record Vector2(int X, int Y)
-        {
-
-        }
+        private record Vector2(int X, int Y) { };
     }
 }
